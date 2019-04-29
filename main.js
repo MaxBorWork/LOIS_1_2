@@ -57,7 +57,8 @@ function buildSKNF(formula) {
     if (disjunctsNumber > 1) {
         sknf = LEFT_BRACKET + sknf + RIGHT_BRACKET;
     }
-    return sknf;
+    let answer = "СКНФ: " + sknf;
+    return answer;
 }
 
 //author Novitsky V
@@ -109,15 +110,9 @@ function unique(arr) {
 
 function buildTruthTable(formula) {
     let subformuls = parseSubformuls(formula);
-    for (let i = 0; i < linesNumber; i++) {
-        if (formula === "1" || formula === "0") {
-            truthTable.push(Number(formula));
-        } else if (checkSymbols(formula)) {
-            truthTable.push(linesValuesArr[formula]);
-        } else {
-            let currentSubform = subformuls[formula];
-            truthTable.push(performOperation(currentSubform, subformuls, linesValuesArr[i]));
-        }
+    for (let lineIndex = 0; lineIndex < linesNumber; lineIndex++) {
+        subformulsArr[lineIndex] = {};
+        truthTable.push(calculateSubformula(formula, subformuls, linesValuesArr[lineIndex], lineIndex));
     }
     printTruthTable(subformuls);
 }
@@ -145,14 +140,9 @@ function printTruthTable(subformuls) {
             td.appendChild(document.createTextNode(linesValuesArr[lineIndex][variables[variableIndex]]));
             row.appendChild(td);
         }
-        // for (let subIndex = 0; subIndex < subformuls.length; subIndex++) {
-        //     let td = document.createElement("TD");
-        //     td.appendChild(document.createTextNode(truthTable[i][subformuls[subIndex]]));
-        //     row.appendChild(td);
-        // }
         for (let key in subformuls) {
             let td = document.createElement("TD");
-            td.appendChild(document.createTextNode(truthTable[lineIndex]));
+            td.appendChild(document.createTextNode(subformulsArr[lineIndex][key]));
             row.appendChild(td);
         }
         tbody.appendChild(row);
@@ -233,28 +223,28 @@ function checkSymbols(formula) {
     return symbols.test(formula)
 }
 
-function performOperation(subform, subforms, lineValue) {
+function performOperation(subform, subforms, lineValue, lineIndex) {
     let result;
 
     switch (subform.operator) {
         case NEGATION:
-            result = negation(calculateSubformula(subform.operand, subforms, lineValue));
+            result = negation(calculateSubformula(subform.operand, subforms, lineValue, lineIndex));
             break;
         case DISJUNCTION:
-            result = calculateSubformula(subform["left"], subforms, lineValue)
-                | calculateSubformula(subform["right"], subforms, lineValue);
+            result = calculateSubformula(subform["left"], subforms, lineValue, lineIndex)
+                | calculateSubformula(subform["right"], subforms, lineValue, lineIndex);
             break;
         case KONJUNCTION:
-            result = calculateSubformula(subform["left"], subforms, lineValue)
-                & calculateSubformula(subform["right"], subforms, lineValue);
+            result = calculateSubformula(subform["left"], subforms, lineValue, lineIndex)
+                & calculateSubformula(subform["right"], subforms, lineValue, lineIndex);
             break;
         case EQUIVALENCE:
-            result = equivalence(calculateSubformula(subform["left"], subforms, lineValue),
-                calculateSubformula(subform["right"], subforms, lineValue));
+            result = equivalence(calculateSubformula(subform["left"], subforms, lineValue, lineIndex),
+                calculateSubformula(subform["right"], subforms, lineValue, lineIndex));
             break;
         case IMPICATION:
-            result = implication(calculateSubformula(subform["left"], subforms, lineValue),
-                calculateSubformula(subform["right"], subforms, lineValue));
+            result = implication(calculateSubformula(subform["left"], subforms, lineValue, lineIndex),
+                calculateSubformula(subform["right"], subforms, lineValue, lineIndex));
             break;
     }
     return result;
@@ -280,17 +270,18 @@ function implication(leftOperand, rightOperand) {
     return negation(leftOperand) | rightOperand;
 }
 
-function calculateSubformula(subform, subforms, lineValue) {
+function calculateSubformula(subform, subforms, lineValue, lineIndex) {
     let result;
+
 
     if (subform === "1" || subform === "0") {
         result = Number(subform);
     } else if (checkSymbols(subform)) {
         result = lineValue[subform];
     } else {
-        result = performOperation(subforms[subform], subforms, lineValue)
+        result = performOperation(subforms[subform], subforms, lineValue, lineIndex)
     }
-    subformulsArr[subform] = result;
+    subformulsArr[lineIndex][subform] = result;
     return result;
 }
 
